@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mercato Agricolo Solidando</title>
+<style>
+  :root {
+    --verde: #2f6b3a; --verde-scuro: #234f2b; --verde-chiaro: #e8f1e4;
+    --fondo: #f5f3ec; --card: #ffffff; --testo: #1e281e; --grigio: #667066; --bordo: #e1ddd1;
+    --rosso: #b42318; --rosso-chiaro: #fdecea; --ambra: #8a5300; --ambra-chiaro: #fdf2dc;
+    --raggio: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--testo);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+  .contenitore { max-width: 920px; margin: 0 auto; padding: 0 16px 48px; }
+
+  /* intestazione */
+  .testata { background: var(--verde); color: #fff; }
+  .testata .contenitore { display: flex; align-items: center; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+  .testata h1 { font-size: 17px; margin: 0; font-weight: 600; line-height: 1.2; }
+  .testata .chi { font-size: 13px; opacity: .85; }
+  .testata .spazio { flex: 1; }
+  .testata .btn { background: rgba(255,255,255,.14); color: #fff; border-color: transparent; }
+  .logo { width: 34px; height: 34px; flex: none; }
+
+  .schede { display: flex; gap: 4px; overflow-x: auto; background: var(--verde-scuro); }
+  .schede .contenitore { display: flex; gap: 4px; padding-top: 0; padding-bottom: 0; }
+  .schede button { background: none; border: 0; color: rgba(255,255,255,.75); padding: 12px 14px;
+    border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; }
+  .schede button.attiva { color: #fff; border-bottom-color: #cfe5c4; font-weight: 600; }
+
+  .card { background: var(--card); border: 1px solid var(--bordo); border-radius: var(--raggio);
+    padding: 18px; margin-top: 16px; }
+  .card h2 { font-size: 18px; margin: 0 0 12px; }
+  .card h2 small { font-weight: 400; color: var(--grigio); font-size: 14px; }
+
+  label { display: block; font-size: 14px; color: var(--grigio); margin: 12px 0 4px; }
+  input[type=text], input[type=password], input[type=date], input[type=number], select {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--bordo); border-radius: 10px; background: #fff; }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--verde); outline-offset: 1px; }
+  .riga { display: flex; gap: 12px; flex-wrap: wrap; }
+  .riga > * { flex: 1 1 160px; }
+  .importo { font-size: 24px; font-weight: 600; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 16px; border-radius: 10px; border: 1px solid var(--bordo); background: #fff; cursor: pointer; }
+  .btn.primario { background: var(--verde); border-color: var(--verde); color: #fff; font-weight: 600; }
+  .btn.primario:hover { background: var(--verde-scuro); }
+  .btn.pericolo { color: var(--rosso); border-color: #f1c7c2; }
+  .btn.piccolo { padding: 6px 10px; font-size: 14px; }
+  .btn.largo { width: 100%; margin-top: 16px; padding: 13px; font-size: 17px; }
+  .btn[disabled] { opacity: .6; cursor: progress; }
+  .pulsanti { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  .quota { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: var(--verde-chiaro);
+    display: flex; justify-content: space-between; align-items: baseline; }
+  .quota b { font-size: 20px; color: var(--verde-scuro); }
+  .nota { font-size: 14px; color: var(--grigio); margin: 8px 0 0; }
+  .nota.ambra { color: var(--ambra); background: var(--ambra-chiaro); padding: 8px 12px; border-radius: 8px; }
+  .errore { color: var(--rosso); font-size: 14px; min-height: 1.4em; margin: 8px 0 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; font-weight: 600; font-size: 13px; color: var(--grigio); border-bottom: 1px solid var(--bordo); padding: 8px 6px; }
+  td { padding: 9px 6px; border-bottom: 1px solid #f0ede5; vertical-align: middle; }
+  td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tr.totale td { font-weight: 700; border-top: 2px solid var(--bordo); border-bottom: 0; }
+  tr.cliccabile { cursor: pointer; }
+  tr.cliccabile:hover td { background: #faf9f5; }
+  tr.mancante td { color: var(--grigio); }
+  .tabella { overflow-x: auto; }
+  .mese { margin-top: 18px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px;
+    font-size: 15px; padding-bottom: 4px; }
+  .mese span { color: var(--grigio); font-weight: 400; font-size: 14px; }
+
+  .etichetta { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #eef0ec; color: var(--grigio); white-space: nowrap; }
+  .etichetta.ok { background: var(--verde-chiaro); color: var(--verde-scuro); }
+  .etichetta.manca { background: var(--ambra-chiaro); color: var(--ambra); }
+  .etichetta.off { background: #f1f1f1; color: #888; }
+
+  .tessere { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
+  .tessera { background: var(--card); border: 1px solid var(--bordo); border-radius: var(--raggio); padding: 14px 16px; }
+  .tessera .t { font-size: 13px; color: var(--grigio); }
+  .tessera .v { font-size: 22px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .tessera.evidenza { background: var(--verde); border-color: var(--verde); color: #fff; }
+  .tessera.evidenza .t { color: rgba(255,255,255,.8); }
+
+  .preset { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+  .pin { font-family: ui-monospace, Consolas, monospace; letter-spacing: 1px; }
+
+  /* accesso */
+  .accesso { max-width: 400px; margin: 0 auto; padding: 48px 16px; text-align: center; }
+  .accesso .logo { width: 64px; height: 64px; }
+  .accesso h1 { font-size: 24px; margin: 12px 0 4px; }
+  .accesso .sotto { color: var(--grigio); margin: 0; }
+  .accesso .card { text-align: left; margin-top: 24px; }
+  .accesso input { font-size: 24px; letter-spacing: 6px; text-align: center; }
+
+  /* finestra */
+  .velo { position: fixed; inset: 0; background: rgba(20,30,20,.45); display: flex; align-items: center;
+    justify-content: center; padding: 16px; z-index: 10; }
+  .velo[hidden] { display: none; }
+  .finestra { background: #fff; border-radius: var(--raggio); padding: 20px; width: 100%; max-width: 440px;
+    max-height: calc(100vh - 32px); overflow: auto; }
+  .finestra h3 { margin: 0 0 4px; font-size: 18px; }
+  .spunta { display: flex; align-items: center; gap: 10px; margin: 10px 0; color: var(--testo); font-size: 16px; }
+  .spunta input { width: 20px; height: 20px; }
+
+  .avviso { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--testo); color: #fff;
+    padding: 10px 18px; border-radius: 999px; font-size: 15px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20;
+    max-width: calc(100% - 32px); }
+  .avviso.visibile { opacity: 1; }
+  .caricamento { text-align: center; padding: 60px 16px; color: var(--grigio); }
+
+  @media (max-width: 560px) {
+    .nascondi-mobile { display: none; }
+    .card { padding: 14px; }
+    table { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"><p class="caricamento">Caricamento…</p></div>
+<div id="velo" class="velo" hidden><div class="finestra" id="finestra" role="dialog" aria-modal="true"></div></div>
+<div id="avviso" class="avviso" role="status"></div>
+
+<script>
+// Indirizzo e chiave pubblica del progetto Supabase (Project Settings → API).
+// La chiave pubblica può stare qui: i dati si raggiungono solo attraverso api() e il PIN.
+const SUPABASE_URL = 'https://lyqesspidjlkqnqjfyrg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_SKAqshCyplrf9wE-AqBk3g_ytMxKho1';
+const SERVER = location.hostname === 'localhost' ? location.origin : SUPABASE_URL; // in locale: prove/anteprima.js
+
+const LOGO = '<svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="24" fill="#cfe5c4"/><path d="M24 38V18" stroke="#234f2b" stroke-width="2.5" stroke-linecap="round"/><path d="M24 26c-6 0-9-4-9-9 5 0 9 3 9 9zM24 22c6 0 9-4 9-9-5 0-9 3-9 9zM24 32c-5 0-8-3-8-7 4 0 8 2 8 7zM24 30c5 0 8-3 8-7-4 0-8 2-8 7z" fill="#2f6b3a"/></svg>';
+const NOME_BREVE = { mar: 'Via Sacco', gio: 'Largo Augusto' };
+const GIORNO_MERCATO = { mar: 'martedì', gio: 'giovedì' };
+
+const S = {
+  token: null, ruolo: null, d: null,
+  scheda: 'giornata', giorno: null, mercato: null,
+  da: null, a: null, filtro: 'tutti', mostraPin: false,
+  form: { data: null, mercato: null, importo: '', toccato: false }
+};
+
+/* ---------- utilità ---------- */
+const $ = (sel, el) => (el || document).querySelector(sel);
+const app = $('#app');
+const euro = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+const soldi = n => euro.format(n || 0);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dataObj = s => { const [y, m, g] = s.split('-').map(Number); return new Date(y, m - 1, g); };
+const dataStr = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const giornoBreve = s => dataObj(s).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit', year: '2-digit' });
+const giornoLungo = s => dataObj(s).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const nomeMese = ym => { const s = dataObj(ym + '-01').toLocaleDateString('it-IT', { month: 'long', year: 'numeric' }); return s[0].toUpperCase() + s.slice(1); };
+const mercatoDelGiorno = s => { const g = dataObj(s).getDay(); return g === 2 ? 'mar' : g === 4 ? 'gio' : null; };
+const leggiNumero = t => { const n = Number(String(t).trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return String(t).trim() === '' ? NaN : n; };
+const quotaDi = n => Math.round(n * S.d.percentuale) / 100;
+const percTesto = () => String(S.d.percentuale).replace('.', ',') + '%';
+
+function ultimoGiornoDiMercato(oggi, mercatiValidi) {
+  const d = dataObj(oggi);
+  for (let i = 0; i < 14; i++) {
+    const m = mercatoDelGiorno(dataStr(d));
+    if (m && mercatiValidi.includes(m)) return dataStr(d);
+    d.setDate(d.getDate() - 1);
+  }
+  return oggi;
+}
+
+function avviso(testo) {
+  const el = $('#avviso');
+  el.textContent = testo;
+  el.classList.add('visibile');
+  clearTimeout(avviso.t);
+  avviso.t = setTimeout(() => el.classList.remove('visibile'), 2600);
+}
+
+function memoria(scrivi) {
+  try {
+    if (scrivi === undefined) return JSON.parse(sessionStorage.getItem('solidando') || 'null');
+    if (scrivi === null) sessionStorage.removeItem('solidando');
+    else sessionStorage.setItem('solidando', JSON.stringify(scrivi));
+  } catch (e) { return null; }
+}
+
+/* ---------- comunicazione col server ---------- */
+async function chiama(azione, extra) {
+  let r;
+  try {
+    const risposta = await fetch(SERVER + '/rest/v1/rpc/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ req: Object.assign({ azione: azione, token: S.token }, extra || {}) })
+    });
+    r = await risposta.json();
+  } catch (e) {
+    throw new Error('Connessione non riuscita: controlla internet e riprova.');
+  }
+  if (r && r.ok) return r;
+  if (r && r.scaduta) esci('La sessione è scaduta: inserisci di nuovo il PIN.');
+  throw new Error((r && (r.errore || r.message)) || 'Errore imprevisto.');
+}
+
+async function conAttesa(bottone, promessa) {
+  const testo = bottone ? bottone.innerHTML : '';
+  if (bottone) { bottone.disabled = true; bottone.textContent = 'Attendere…'; }
+  try { return await promessa; }
+  finally { if (bottone && bottone.isConnected) { bottone.disabled = false; bottone.innerHTML = testo; } }
+}
+
+function scrivi(sel, testo) { const el = $(sel); if (el) el.textContent = testo; }
+
+function esci(messaggio) {
+  S.token = S.ruolo = S.d = null;
+  S.form = { data: null, mercato: null, importo: '', toccato: false };
+  S.giorno = S.da = S.a = null;
+  memoria(null);
+  chiudiFinestra();
+  vistaAccesso(messaggio);
+}
+
+function entra(r) {
+  S.token = r.token || S.token;
+  S.ruolo = r.ruolo || S.ruolo;
+  memoria({ token: S.token, ruolo: S.ruolo });
+  S.d = r;
+  disegna();
+}
+
+function disegna() {
+  if (S.ruolo === 'admin') vistaAdmin(); else vistaAzienda();
+}
+
+/* ---------- accesso ---------- */
+function vistaAccesso(messaggio) {
+  app.innerHTML = `
+    <main class="accesso">
+      ${LOGO}
+      <h1>Mercato Agricolo Solidando</h1>
+      <p class="sotto">Martedì in via Sacco · Giovedì in Largo Augusto</p>
+      <form class="card" id="fAccesso" autocomplete="off">
+        <label for="pin">Inserisci il tuo PIN</label>
+        <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="16" required>
+        <button class="btn primario largo" type="submit">Entra</button>
+        <p class="errore" id="errAccesso">${esc(messaggio || '')}</p>
+      </form>
+    </main>`;
+  $('#pin').focus();
+  $('#fAccesso').onsubmit = async e => {
+    e.preventDefault();
+    $('#errAccesso').textContent = '';
+    try {
+      const r = await conAttesa(e.submitter || $('#fAccesso button'), chiama('login', { pin: $('#pin').value }));
+      entra(r);
+    } catch (err) {
+      scrivi('#errAccesso', err.message);
+      $('#pin').select();
+    }
+  };
+}
+
+function testata(nome, conSchede) {
+  return `
+    <header class="testata"><div class="contenitore">
+      ${LOGO}
+      <div><h1>Mercato Agricolo Solidando</h1><div class="chi">${esc(nome)}</div></div>
+      <div class="spazio"></div>
+      <button class="btn piccolo" id="bEsci" type="button">Esci</button>
+    </div></header>
+    ${conSchede ? `<nav class="schede"><div class="contenitore">
+      ${[['giornata', 'Giornata'], ['riepilogo', 'Riepilogo'], ['aziende', 'Aziende e PIN']].map(([k, t]) =>
+        `<button type="button" data-scheda="${k}" class="${S.scheda === k ? 'attiva' : ''}">${t}</button>`).join('')}
+    </div></nav>` : ''}`;
+}
+
+function collegaTestata() {
+  $('#bEsci').onclick = () => esci();
+  document.querySelectorAll('[data-scheda]').forEach(b => b.onclick = () => { S.scheda = b.dataset.scheda; disegna(); });
+}
+
+/* ---------- pagina dell'azienda ---------- */
+function vistaAzienda() {
+  const d = S.d, az = d.azienda;
+  const mieiMercati = ['mar', 'gio'].filter(m => az[m]);
+  const f = S.form;
+  if (!f.data) f.data = ultimoGiornoDiMercato(d.oggi, mieiMercati);
+  const delGiorno = mercatoDelGiorno(f.data);
+  if (!f.mercato || !mieiMercati.includes(f.mercato)) f.mercato = mieiMercati.includes(delGiorno) ? delGiorno : mieiMercati[0];
+  const esistente = d.fatturati.find(x => x.data === f.data && x.mercato === f.mercato);
+  if (!f.toccato) f.importo = esistente ? esistente.importo.toFixed(2).replace('.', ',') : '';
+
+  const avvertenze = [];
+  if (!delGiorno || !mieiMercati.includes(delGiorno)) {
+    avvertenze.push(`Attenzione: il ${esc(giornoLungo(f.data))} non è un giorno del tuo mercato. Controlla la data.`);
+  }
+  if (esistente) {
+    avvertenze.push(`Hai già inserito ${soldi(esistente.importo)} per questa giornata. Se salvi, la cifra viene sostituita.`);
+  }
+
+  const ordinati = d.fatturati.slice().sort((a, b) => b.data.localeCompare(a.data) || a.mercato.localeCompare(b.mercato));
+  const mesi = [];
+  ordinati.forEach(x => {
+    const k = x.data.slice(0, 7);
+    let m = mesi[mesi.length - 1];
+    if (!m || m.k !== k) mesi.push(m = { k, righe: [], imp: 0, quota: 0 });
+    m.righe.push(x); m.imp += x.importo; m.quota += x.quota;
+  });
+
+  app.innerHTML = testata(az.nome) + `
+    <div class="contenitore">
+      <form class="card" id="fFatturato">
+        <h2>Inserisci il fatturato della giornata</h2>
+        <div class="riga">
+          <div><label for="fData">Giorno di mercato</label>
+            <input type="date" id="fData" value="${f.data}" max="${d.oggi}" required></div>
+          <div><label for="fMercato">Mercato</label>
+            <select id="fMercato" ${mieiMercati.length < 2 ? 'disabled' : ''}>
+              ${mieiMercati.map(m => `<option value="${m}" ${m === f.mercato ? 'selected' : ''}>${esc(d.mercati[m])}</option>`).join('')}
+            </select></div>
+        </div>
+        <label for="fImporto">Fatturato totale della giornata (€)</label>
+        <input type="text" id="fImporto" class="importo" inputmode="decimal" placeholder="0,00" value="${esc(f.importo)}" autocomplete="off" required>
+        <div class="quota"><span>Quota ${percTesto()} da versare</span><b id="fQuota">${soldi(0)}</b></div>
+        ${avvertenze.map(t => `<p class="nota ambra">${t}</p>`).join('')}
+        <p class="errore" id="fErrore"></p>
+        <button class="btn primario largo" type="submit">${esistente ? 'Aggiorna il fatturato' : 'Salva il fatturato'}</button>
+      </form>
+
+      <section class="card">
+        <h2>I tuoi incassi <small>· tocca una riga per correggerla</small></h2>
+        ${mesi.length ? mesi.map(m => `
+          <div class="mese">${nomeMese(m.k)} <span>${soldi(m.imp)} · quota ${soldi(m.quota)}</span></div>
+          <div class="tabella"><table>
+            <thead><tr><th>Giorno</th><th class="nascondi-mobile">Mercato</th><th class="num">Fatturato</th><th class="num">Quota</th></tr></thead>
+            <tbody>${m.righe.map(x => `
+              <tr class="cliccabile" data-data="${x.data}" data-mercato="${x.mercato}">
+                <td>${esc(giornoBreve(x.data))}</td>
+                <td class="nascondi-mobile">${esc(NOME_BREVE[x.mercato] || x.mercato)}</td>
+                <td class="num">${soldi(x.importo)}</td>
+                <td class="num">${soldi(x.quota)}</td>
+              </tr>`).join('')}</tbody>
+          </table></div>`).join('') : '<p class="nota">Non hai ancora inserito nessun fatturato.</p>'}
+      </section>
+    </div>`;
+
+  collegaTestata();
+  const campo = $('#fImporto');
+  const aggiornaQuota = () => {
+    const n = leggiNumero(campo.value);
+    $('#fQuota').textContent = soldi(isFinite(n) && n >= 0 ? quotaDi(n) : 0);
+  };
+  aggiornaQuota();
+  campo.oninput = () => { f.importo = campo.value; f.toccato = true; aggiornaQuota(); };
+  $('#fData').onchange = e => {
+    if (!e.target.value) return;
+    f.data = e.target.value; f.toccato = false;
+    const m = mercatoDelGiorno(f.data);
+    if (mieiMercati.includes(m)) f.mercato = m;
+    vistaAzienda();
+  };
+  $('#fMercato').onchange = e => { f.mercato = e.target.value; f.toccato = false; vistaAzienda(); };
+  document.querySelectorAll('tr[data-data]').forEach(tr => tr.onclick = () => {
+    f.data = tr.dataset.data; f.mercato = tr.dataset.mercato; f.toccato = false;
+    vistaAzienda();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    $('#fImporto').focus();
+  });
+
+  $('#fFatturato').onsubmit = async e => {
+    e.preventDefault();
+    const n = leggiNumero(campo.value);
+    if (!isFinite(n) || n < 0) { $('#fErrore').textContent = 'Scrivi un importo valido, per esempio 1250,50'; return; }
+    if (esistente && !confirm(`Sostituire ${soldi(esistente.importo)} con ${soldi(n)}?`)) return;
+    try {
+      const r = await conAttesa(e.submitter || $('#fFatturato button'), chiama('salva', { data: f.data, mercato: f.mercato, importo: n }));
+      S.d = r; f.toccato = false;
+      vistaAzienda();
+      avviso(`Salvato: ${soldi(n)} · quota ${soldi(quotaDi(n))}`);
+    } catch (err) {
+      scrivi('#fErrore', err.message);
+    }
+  };
+}
+
+/* ---------- area amministratore ---------- */
+function vistaAdmin() {
+  app.innerHTML = testata('Amministrazione', true) + '<div class="contenitore" id="corpo"></div>';
+  collegaTestata();
+  if (S.scheda === 'riepilogo') schedaRiepilogo();
+  else if (S.scheda === 'aziende') schedaAziende();
+  else schedaGiornata();
+}
+
+const nomeAzienda = id => { const a = S.d.aziende.find(x => x.id === id); return a ? a.nome : id; };
+
+async function eseguiAdmin(bottone, azione, extra, messaggio) {
+  const r = await conAttesa(bottone, chiama(azione, extra));
+  S.d = r;
+  disegna();
+  if (messaggio) avviso(messaggio);
+  return r;
+}
+
+/* giornata */
+function schedaGiornata() {
+  const d = S.d;
+  if (!S.giorno) S.giorno = ultimoGiornoDiMercato(d.oggi, ['mar', 'gio']);
+  if (!S.mercato) S.mercato = mercatoDelGiorno(S.giorno) || 'gio';
+
+  const righe = d.fatturati.filter(f => f.data === S.giorno && f.mercato === S.mercato);
+  const perAzienda = {};
+  righe.forEach(f => perAzienda[f.aziendaId] = f);
+  const elenco = d.aziende.filter(a => (a[S.mercato] && a.attiva) || perAzienda[a.id])
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+  const inseriti = elenco.filter(a => perAzienda[a.id]).length;
+  const totImp = righe.reduce((s, f) => s + f.importo, 0);
+  const totQuota = righe.reduce((s, f) => s + f.quota, 0);
+  const avvertenza = mercatoDelGiorno(S.giorno) !== S.mercato
+    ? `<p class="nota ambra">Il ${esc(giornoLungo(S.giorno))} non è il giorno abituale di questo mercato.</p>` : '';
+
+  $('#corpo').innerHTML = `
+    <section class="card">
+      <div class="riga">
+        <div><label for="gData">Giorno</label><input type="date" id="gData" value="${S.giorno}" max="${d.oggi}"></div>
+        <div><label for="gMercato">Mercato</label><select id="gMercato">
+          ${['mar', 'gio'].map(m => `<option value="${m}" ${m === S.mercato ? 'selected' : ''}>${esc(d.mercati[m])}</option>`).join('')}
+        </select></div>
+      </div>
+      ${avvertenza}
+    </section>
+    <div class="tessere">
+      <div class="tessera"><div class="t">Hanno inserito</div><div class="v">${inseriti} su ${elenco.length}</div></div>
+      <div class="tessera"><div class="t">Fatturato totale</div><div class="v">${soldi(totImp)}</div></div>
+      <div class="tessera evidenza"><div class="t">Totale quote ${percTesto()}</div><div class="v">${soldi(totQuota)}</div></div>
+    </div>
+    <section class="card">
+      <h2>${esc(giornoLungo(S.giorno))} <small>· ${esc(d.mercati[S.mercato])}</small></h2>
+      <div class="tabella"><table>
+        <thead><tr><th>Azienda</th><th class="num">Fatturato</th><th class="num">Quota</th><th class="nascondi-mobile">Stato</th></tr></thead>
+        <tbody>
+          ${elenco.map(a => {
+            const f = perAzienda[a.id];
+            const stato = !f ? '<span class="etichetta manca">da inserire</span>'
+              : f.modificato ? `<span class="etichetta">corretto ${esc(f.modificato)}</span>`
+              : `<span class="etichetta ok">inserito ${esc(f.inserito.slice(11))}</span>`;
+            return `<tr class="cliccabile ${f ? '' : 'mancante'}" data-azienda="${a.id}">
+              <td>${esc(a.nome)}</td>
+              <td class="num">${f ? soldi(f.importo) : '—'}</td>
+              <td class="num">${f ? soldi(f.quota) : '—'}</td>
+              <td class="nascondi-mobile">${stato}</td></tr>`;
+          }).join('')}
+          <tr class="totale"><td>Totale</td><td class="num">${soldi(totImp)}</td><td class="num">${soldi(totQuota)}</td><td class="nascondi-mobile"></td></tr>
+        </tbody>
+      </table></div>
+      <p class="nota">Tocca un'azienda per inserire o correggere il suo fatturato al suo posto.</p>
+      <div class="pulsanti"><button class="btn" id="gScarica" type="button">Scarica in Excel</button></div>
+    </section>`;
+
+  $('#gData').onchange = e => {
+    if (!e.target.value) return;
+    S.giorno = e.target.value;
+    S.mercato = mercatoDelGiorno(S.giorno) || S.mercato;
+    vistaAdmin();
+  };
+  $('#gMercato').onchange = e => { S.mercato = e.target.value; vistaAdmin(); };
+  document.querySelectorAll('tr[data-azienda]').forEach(tr => tr.onclick = () =>
+    finestraFatturato(d.aziende.find(a => a.id === tr.dataset.azienda), perAzienda[tr.dataset.azienda]));
+  $('#gScarica').onclick = () => scaricaCsv(`fatturati_${S.giorno}_${NOME_BREVE[S.mercato].replace(' ', '-')}.csv`, [
+    ['Data', 'Mercato', 'Azienda', 'Fatturato €', 'Quota €', 'Stato'],
+    ...elenco.map(a => {
+      const f = perAzienda[a.id];
+      return [S.giorno, NOME_BREVE[S.mercato], a.nome, f ? f.importo : '', f ? f.quota : '', f ? 'inserito' : 'da inserire'];
+    }),
+    ['', '', 'Totale', totImp, totQuota, '']
+  ]);
+}
+
+function finestraFatturato(az, esistente) {
+  apriFinestra(`
+    <h3>${esc(az.nome)}</h3>
+    <p class="nota">${esc(giornoLungo(S.giorno))} · ${esc(S.d.mercati[S.mercato])}</p>
+    <form id="fAdmin">
+      <label for="aImporto">Fatturato (€)</label>
+      <input type="text" id="aImporto" class="importo" inputmode="decimal" value="${esistente ? esistente.importo.toFixed(2).replace('.', ',') : ''}" placeholder="0,00" required>
+      <div class="quota"><span>Quota ${percTesto()}</span><b id="aQuota"></b></div>
+      ${esistente ? `<p class="nota">Inserito il ${esc(esistente.inserito)} da ${esc(esistente.da || 'azienda')}${esistente.modificato ? ` · corretto il ${esc(esistente.modificato)}` : ''}</p>` : ''}
+      <p class="errore" id="aErrore"></p>
+      <div class="pulsanti">
+        <button class="btn primario" type="submit">Salva</button>
+        <button class="btn" type="button" data-chiudi>Annulla</button>
+        ${esistente ? '<button class="btn pericolo" type="button" id="aElimina">Elimina</button>' : ''}
+      </div>
+    </form>`);
+  const campo = $('#aImporto');
+  const aggiorna = () => { const n = leggiNumero(campo.value); $('#aQuota').textContent = soldi(isFinite(n) && n >= 0 ? quotaDi(n) : 0); };
+  aggiorna();
+  campo.oninput = aggiorna;
+  campo.focus();
+  $('#fAdmin').onsubmit = async e => {
+    e.preventDefault();
+    const n = leggiNumero(campo.value);
+    if (!isFinite(n) || n < 0) { $('#aErrore').textContent = 'Importo non valido.'; return; }
+    try {
+      await eseguiAdmin(e.submitter, 'salva', { aziendaId: az.id, data: S.giorno, mercato: S.mercato, importo: n }, 'Fatturato salvato');
+      chiudiFinestra();
+    } catch (err) { scrivi('#aErrore', err.message); }
+  };
+  if (esistente) $('#aElimina').onclick = async e => {
+    if (!confirm(`Eliminare il fatturato di ${az.nome} di questa giornata?`)) return;
+    try {
+      await eseguiAdmin(e.currentTarget, 'elimina', { id: esistente.id }, 'Fatturato eliminato');
+      chiudiFinestra();
+    } catch (err) { scrivi('#aErrore', err.message); }
+  };
+}
+
+/* riepilogo */
+function impostaPeriodo(tipo) {
+  const o = dataObj(S.d.oggi);
+  if (tipo === 'mese') { S.da = dataStr(new Date(o.getFullYear(), o.getMonth(), 1)); S.a = S.d.oggi; }
+  if (tipo === 'scorso') { S.da = dataStr(new Date(o.getFullYear(), o.getMonth() - 1, 1)); S.a = dataStr(new Date(o.getFullYear(), o.getMonth(), 0)); }
+  if (tipo === 'anno') { S.da = o.getFullYear() + '-01-01'; S.a = S.d.oggi; }
+  if (tipo === 'tutto') { S.da = S.d.fatturati.reduce((m, f) => f.data < m ? f.data : m, S.d.oggi); S.a = S.d.oggi; }
+}
+
+function schedaRiepilogo() {
+  const d = S.d;
+  if (!S.da) impostaPeriodo('mese');
+  const righe = d.fatturati.filter(f => f.data >= S.da && f.data <= S.a && (S.filtro === 'tutti' || f.mercato === S.filtro));
+  const per = {};
+  d.aziende.forEach(a => {
+    if (a.attiva && (S.filtro === 'tutti' ? (a.mar || a.gio) : a[S.filtro])) per[a.id] = { id: a.id, giornate: 0, imp: 0, quota: 0 };
+  });
+  righe.forEach(f => {
+    const p = per[f.aziendaId] || (per[f.aziendaId] = { id: f.aziendaId, giornate: 0, imp: 0, quota: 0 });
+    p.giornate++; p.imp += f.importo; p.quota += f.quota;
+  });
+  const elenco = Object.values(per).map(p => Object.assign(p, { nome: nomeAzienda(p.id) }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+  const tot = elenco.reduce((t, p) => ({ imp: t.imp + p.imp, quota: t.quota + p.quota }), { imp: 0, quota: 0 });
+  const giornate = new Set(righe.map(f => f.data + f.mercato)).size;
+  const perMercato = m => righe.filter(f => f.mercato === m).reduce((s, f) => s + f.quota, 0);
+
+  $('#corpo').innerHTML = `
+    <section class="card">
+      <div class="riga">
+        <div><label for="rDa">Dal</label><input type="date" id="rDa" value="${S.da}"></div>
+        <div><label for="rA">Al</label><input type="date" id="rA" value="${S.a}"></div>
+        <div><label for="rMercato">Mercato</label><select id="rMercato">
+          <option value="tutti">Tutti e due</option>
+          ${['mar', 'gio'].map(m => `<option value="${m}" ${m === S.filtro ? 'selected' : ''}>${esc(d.mercati[m])}</option>`).join('')}
+        </select></div>
+      </div>
+      <div class="preset">
+        <button class="btn piccolo" type="button" data-periodo="mese">Questo mese</button>
+        <button class="btn piccolo" type="button" data-periodo="scorso">Mese scorso</button>
+        <button class="btn piccolo" type="button" data-periodo="anno">Quest'anno</button>
+        <button class="btn piccolo" type="button" data-periodo="tutto">Dall'inizio</button>
+      </div>
+    </section>
+    <div class="tessere">
+      <div class="tessera"><div class="t">Giornate di mercato</div><div class="v">${giornate}</div></div>
+      <div class="tessera"><div class="t">Fatturato totale</div><div class="v">${soldi(tot.imp)}</div></div>
+      ${S.filtro === 'tutti' ? `
+        <div class="tessera"><div class="t">Quote Via Sacco</div><div class="v">${soldi(perMercato('mar'))}</div></div>
+        <div class="tessera"><div class="t">Quote Largo Augusto</div><div class="v">${soldi(perMercato('gio'))}</div></div>` : ''}
+      <div class="tessera evidenza"><div class="t">Totale quote</div><div class="v">${soldi(tot.quota)}</div></div>
+    </div>
+    <section class="card">
+      <h2>Quote per azienda <small>· dal ${esc(giornoBreve(S.da))} al ${esc(giornoBreve(S.a))}</small></h2>
+      <div class="tabella"><table>
+        <thead><tr><th>Azienda</th><th class="num">Giornate</th><th class="num">Fatturato</th><th class="num">Quota</th></tr></thead>
+        <tbody>
+          ${elenco.map(p => `<tr class="${p.giornate ? '' : 'mancante'}"><td>${esc(p.nome)}</td>
+            <td class="num">${p.giornate}</td><td class="num">${soldi(p.imp)}</td><td class="num"><b>${soldi(p.quota)}</b></td></tr>`).join('')}
+          <tr class="totale"><td>Totale</td><td class="num">${righe.length}</td><td class="num">${soldi(tot.imp)}</td><td class="num">${soldi(tot.quota)}</td></tr>
+        </tbody>
+      </table></div>
+      <div class="pulsanti">
+        <button class="btn" type="button" id="rScaricaRiep">Scarica riepilogo (Excel)</button>
+        <button class="btn" type="button" id="rScaricaDett">Scarica tutte le giornate (Excel)</button>
+      </div>
+    </section>`;
+
+  $('#rDa').onchange = e => { if (e.target.value) { S.da = e.target.value; vistaAdmin(); } };
+  $('#rA').onchange = e => { if (e.target.value) { S.a = e.target.value; vistaAdmin(); } };
+  $('#rMercato').onchange = e => { S.filtro = e.target.value; vistaAdmin(); };
+  document.querySelectorAll('[data-periodo]').forEach(b => b.onclick = () => { impostaPeriodo(b.dataset.periodo); vistaAdmin(); });
+  $('#rScaricaRiep').onclick = () => scaricaCsv(`quote_${S.da}_${S.a}.csv`, [
+    ['Azienda', 'Giornate', 'Fatturato €', 'Quota €'],
+    ...elenco.map(p => [p.nome, String(p.giornate), p.imp, p.quota]),
+    ['Totale', String(righe.length), tot.imp, tot.quota]
+  ]);
+  $('#rScaricaDett').onclick = () => scaricaCsv(`giornate_${S.da}_${S.a}.csv`, [
+    ['Data', 'Mercato', 'Azienda', 'Fatturato €', 'Quota €', 'Inserito il', 'Corretto il'],
+    ...righe.slice().sort((a, b) => a.data.localeCompare(b.data) || a.mercato.localeCompare(b.mercato) || nomeAzienda(a.aziendaId).localeCompare(nomeAzienda(b.aziendaId), 'it'))
+      .map(f => [f.data, NOME_BREVE[f.mercato] || f.mercato, nomeAzienda(f.aziendaId), f.importo, f.quota, f.inserito, f.modificato])
+  ]);
+}
+
+function scaricaCsv(nomeFile, righe) {
+  const cella = c => {
+    const t = typeof c === 'number' ? c.toFixed(2).replace('.', ',') : String(c == null ? '' : c);
+    return /[";\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  };
+  const testo = String.fromCharCode(0xFEFF) + righe.map(r => r.map(cella).join(';')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([testo], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = nomeFile; a.target = '_blank';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+/* aziende e impostazioni */
+function schedaAziende() {
+  const d = S.d;
+  const elenco = d.aziende.slice().sort((a, b) => (b.attiva - a.attiva) || a.nome.localeCompare(b.nome, 'it'));
+  const pin = p => S.mostraPin ? `<span class="pin">${esc(p)}</span>` : '<span class="pin">••••••</span>';
+  $('#corpo').innerHTML = `
+    <section class="card">
+      <h2>Aziende <small>· ${d.aziende.filter(a => a.attiva).length} attive</small></h2>
+      <div class="pulsanti" style="margin-top:0">
+        <button class="btn primario" type="button" id="zNuova">+ Nuova azienda</button>
+        <button class="btn" type="button" id="zMostra">${S.mostraPin ? 'Nascondi i PIN' : 'Mostra i PIN'}</button>
+      </div>
+      <div class="tabella" style="margin-top:12px"><table>
+        <thead><tr><th>Azienda</th><th>PIN</th><th>Mercati</th></tr></thead>
+        <tbody>${elenco.map(a => `
+          <tr class="cliccabile ${a.attiva ? '' : 'mancante'}" data-azienda="${a.id}">
+            <td>${esc(a.nome)}</td>
+            <td>${pin(a.pin)}</td>
+            <td>${a.attiva ? [a.mar ? '<span class="etichetta ok">Mar · Sacco</span>' : '', a.gio ? '<span class="etichetta ok">Gio · Augusto</span>' : ''].join(' ')
+              : '<span class="etichetta off">non attiva</span>'}</td>
+          </tr>`).join('')}</tbody>
+      </table></div>
+      <p class="nota">Tocca un'azienda per cambiarne il nome, i mercati o il PIN. Un'azienda "non attiva" non può più entrare, ma i suoi dati restano.</p>
+    </section>
+
+    <form class="card" id="fImpostazioni">
+      <h2>Impostazioni</h2>
+      <div class="riga">
+        <div><label for="iPin">Il tuo PIN amministratore (almeno 8 cifre)</label>
+          <input type="text" id="iPin" inputmode="numeric" class="pin" value="${S.mostraPin ? esc(d.pinAdmin) : ''}" placeholder="${S.mostraPin ? '' : 'nascosto: premi Mostra i PIN'}"></div>
+        <div><label for="iPerc">Percentuale da calcolare (%)</label>
+          <input type="text" id="iPerc" inputmode="decimal" value="${String(d.percentuale).replace('.', ',')}"></div>
+      </div>
+      <p class="nota">Se cambi la percentuale, vale solo per i fatturati inseriti da quel momento: quelli già salvati restano calcolati con la percentuale di allora.</p>
+      <p class="errore" id="iErrore"></p>
+      <button class="btn primario" type="submit">Salva impostazioni</button>
+    </form>`;
+
+  $('#zMostra').onclick = () => { S.mostraPin = !S.mostraPin; vistaAdmin(); };
+  $('#zNuova').onclick = () => finestraAzienda(null);
+  document.querySelectorAll('tr[data-azienda]').forEach(tr => tr.onclick = () => finestraAzienda(d.aziende.find(a => a.id === tr.dataset.azienda)));
+  $('#fImpostazioni').onsubmit = async e => {
+    e.preventDefault();
+    const nuovoPin = $('#iPin').value.trim();
+    const cambiaPin = nuovoPin && nuovoPin !== d.pinAdmin;
+    if (cambiaPin && !confirm(`Il tuo nuovo PIN sarà ${nuovoPin}. Te lo sei segnato?`)) return;
+    try {
+      await eseguiAdmin(e.submitter, 'impostazioni', { pinAdmin: cambiaPin ? nuovoPin : '', percentuale: $('#iPerc').value }, 'Impostazioni salvate');
+    } catch (err) { scrivi('#iErrore', err.message); }
+  };
+}
+
+function finestraAzienda(az) {
+  const nuova = !az;
+  az = az || { nome: '', mar: false, gio: true, attiva: true };
+  apriFinestra(`
+    <h3>${nuova ? 'Nuova azienda' : esc(az.nome)}</h3>
+    <form id="fAzienda">
+      <label for="zNome">Nome</label>
+      <input type="text" id="zNome" value="${esc(az.nome)}" required>
+      <label>Mercati a cui partecipa</label>
+      <label class="spunta"><input type="checkbox" id="zMar" ${az.mar ? 'checked' : ''}> Martedì · Via Sacco</label>
+      <label class="spunta"><input type="checkbox" id="zGio" ${az.gio ? 'checked' : ''}> Giovedì · Largo Augusto</label>
+      <label class="spunta"><input type="checkbox" id="zAttiva" ${az.attiva ? 'checked' : ''}> Attiva (può entrare con il PIN)</label>
+      ${nuova ? '<p class="nota">Il PIN viene creato in automatico: lo vedi nell\'elenco dopo il salvataggio.</p>'
+        : `<p class="nota">PIN attuale: <span class="pin">${esc(az.pin)}</span></p>`}
+      <p class="errore" id="zErrore"></p>
+      <div class="pulsanti">
+        <button class="btn primario" type="submit">Salva</button>
+        <button class="btn" type="button" data-chiudi>Annulla</button>
+        ${nuova ? '' : '<button class="btn pericolo" type="button" id="zPin">Nuovo PIN</button>'}
+      </div>
+    </form>`);
+  $('#zNome').focus();
+  $('#fAzienda').onsubmit = async e => {
+    e.preventDefault();
+    try {
+      await eseguiAdmin(e.submitter, 'salvaAzienda', {
+        id: az.id || '', nome: $('#zNome').value, mar: $('#zMar').checked, gio: $('#zGio').checked, attiva: $('#zAttiva').checked
+      }, 'Azienda salvata');
+      chiudiFinestra();
+    } catch (err) { scrivi('#zErrore', err.message); }
+  };
+  if (!nuova) $('#zPin').onclick = async e => {
+    if (!confirm(`Generare un nuovo PIN per ${az.nome}? Quello vecchio smetterà subito di funzionare.`)) return;
+    try {
+      const r = await eseguiAdmin(e.currentTarget, 'nuovoPin', { id: az.id });
+      const agg = r.aziende.find(a => a.id === az.id);
+      chiudiFinestra();
+      S.mostraPin = true; disegna();
+      avviso(`Nuovo PIN di ${agg.nome}: ${agg.pin}`);
+    } catch (err) { scrivi('#zErrore', err.message); }
+  };
+}
+
+/* finestra a comparsa */
+function apriFinestra(html) {
+  $('#finestra').innerHTML = html;
+  $('#velo').hidden = false;
+  document.querySelectorAll('#finestra [data-chiudi]').forEach(b => b.onclick = chiudiFinestra);
+}
+function chiudiFinestra() { $('#velo').hidden = true; $('#finestra').innerHTML = ''; }
+$('#velo').addEventListener('click', e => { if (e.target.id === 'velo') chiudiFinestra(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#velo').hidden) chiudiFinestra(); });
+
+/* ---------- avvio ---------- */
+(async function avvio() {
+  const salvata = memoria();
+  if (salvata && salvata.token) {
+    S.token = salvata.token; S.ruolo = salvata.ruolo;
+    try {
+      entra(await chiama(S.ruolo === 'admin' ? 'tutto' : 'dati'));
+      return;
+    } catch (e) { /* sessione non più valida */ }
+  }
+  esci();
+})();
+</script>
+</body>
+</html>
